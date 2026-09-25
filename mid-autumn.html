@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>玉兔賀中秋</title>
+<style>
+  :root {
+    --sky-top: #0b1030;
+    --sky-bottom: #2a1f5c;
+    --moon: #fff4c8;
+    --moon-glow: rgba(255, 236, 160, 0.55);
+    --rabbit: #ffffff;
+    --rabbit-shade: #e9e4f5;
+    --ear-inner: #ffb6c9;
+    --cheek: #ff9fb8;
+    --ink: #3a2a4a;
+    --lantern: #e8403a;
+    --lantern-light: #ffcf5c;
+    --gold: #ffd76a;
+    --text: #fff8e1;
+    --hill: #1a1440;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom));
+    overflow: hidden;
+    font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .scene { position: relative; width: 100%; height: 100%; }
+
+  /* 星星 */
+  .star {
+    position: absolute; width: 3px; height: 3px; border-radius: 50%;
+    background: #fff; animation: twinkle 2.4s ease-in-out infinite;
+  }
+  @keyframes twinkle { 0%,100% { opacity: .2; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.3); } }
+
+  /* 月亮 */
+  .moon {
+    position: absolute; top: 6vh; right: 8vw;
+    width: min(34vw, 220px); aspect-ratio: 1; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fffbe6, var(--moon) 60%, #f5e19a);
+    box-shadow: 0 0 60px 20px var(--moon-glow), 0 0 140px 60px rgba(255, 236, 160, .2);
+    animation: moonrise 3s ease-out both, glow 4s ease-in-out 3s infinite;
+  }
+  .moon::before, .moon::after {
+    content: ""; position: absolute; border-radius: 50%; background: rgba(230, 205, 130, .35);
+  }
+  .moon::before { width: 18%; height: 18%; top: 25%; left: 55%; }
+  .moon::after  { width: 12%; height: 12%; top: 60%; left: 30%; }
+  @keyframes moonrise { from { transform: translateY(40vh); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes glow { 0%,100% { box-shadow: 0 0 60px 20px var(--moon-glow), 0 0 140px 60px rgba(255,236,160,.2); }
+                    50% { box-shadow: 0 0 80px 30px var(--moon-glow), 0 0 180px 80px rgba(255,236,160,.28); } }
+
+  /* 山丘 */
+  .hill {
+    position: absolute; bottom: -12vh; left: -10vw; width: 120vw; height: 34vh;
+    background: var(--hill); border-radius: 50% 50% 0 0;
+  }
+
+  /* 燈籠 */
+  .lantern {
+    position: absolute; top: -10px; width: 46px; transform-origin: top center;
+    animation: swing 3s ease-in-out infinite;
+  }
+  .lantern .string { width: 2px; height: 60px; background: var(--gold); margin: 0 auto; }
+  .lantern .body {
+    width: 46px; height: 56px; border-radius: 45%;
+    background: radial-gradient(circle at 50% 45%, var(--lantern-light), var(--lantern) 70%);
+    box-shadow: 0 0 24px 6px rgba(255, 120, 60, .55);
+    display: grid; place-items: center;
+    font-size: 18px; font-weight: 700; color: var(--gold);
+    border-top: 5px solid var(--gold); border-bottom: 5px solid var(--gold);
+  }
+  .lantern .tassel { width: 4px; height: 22px; background: var(--gold); margin: 0 auto; border-radius: 0 0 3px 3px; }
+  @keyframes swing { 0%,100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+
+  /* 兔子 */
+  .rabbit-wrap {
+    position: absolute; left: 50%; bottom: 14vh;
+    width: min(56vw, 260px); transform: translateX(-50%);
+    animation: hopin 1.8s cubic-bezier(.3,1.4,.5,1) .6s both;
+  }
+  @keyframes hopin { from { transform: translate(-50%, 60vh); } to { transform: translate(-50%, 0); } }
+  .rabbit { width: 100%; animation: bounce 1.2s ease-in-out 2.4s infinite; transform-origin: bottom center; }
+  @keyframes bounce {
+    0%,100% { transform: translateY(0) scale(1, 1); }
+    15%     { transform: translateY(0) scale(1.06, .94); }
+    45%     { transform: translateY(-26px) scale(.97, 1.04); }
+    75%     { transform: translateY(0) scale(1.04, .96); }
+  }
+  .ear-l { transform-origin: 108px 92px; animation: earL 2.4s ease-in-out infinite; }
+  .ear-r { transform-origin: 152px 92px; animation: earR 2.4s ease-in-out infinite; }
+  @keyframes earL { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(-14deg); } }
+  @keyframes earR { 0%,100% { transform: rotate(4deg); } 30% { transform: rotate(18deg); } 60% { transform: rotate(6deg); } }
+  .eye { animation: blink 4s infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes blink { 0%,92%,100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+  .paw-wave { transform-origin: 190px 190px; animation: wave 1s ease-in-out infinite; }
+  @keyframes wave { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-24deg); } }
+
+  /* 祝福文字 */
+  .greeting {
+    position: absolute; top: 30vh; left: 16px; right: 16px;
+    text-align: center; pointer-events: none;
+  }
+  .greeting h1 {
+    font-size: clamp(34px, 9vw, 72px); letter-spacing: .12em; line-height: 1.2;
+    color: var(--gold); text-shadow: 0 0 18px rgba(255, 200, 80, .6);
+  }
+  .greeting p {
+    margin-top: .5em; font-size: clamp(20px, 5.4vw, 38px); letter-spacing: .2em;
+    text-shadow: 0 0 12px rgba(255, 255, 255, .5);
+  }
+  .greeting span { display: inline-block; opacity: 0; animation: pop .6s cubic-bezier(.3,1.6,.5,1) forwards; }
+  @keyframes pop { from { opacity: 0; transform: translateY(20px) scale(.3); } to { opacity: 1; transform: none; } }
+
+  .hint {
+    position: absolute; bottom: 3vh; width: 100%; text-align: center;
+    font-size: 14px; opacity: .7; letter-spacing: .15em;
+    animation: fade 2s ease-in-out infinite alternate;
+  }
+  @keyframes fade { from { opacity: .3; } to { opacity: .8; } }
+
+  /* 點擊飄出的月餅/愛心 */
+  .float {
+    position: absolute; font-size: 28px; pointer-events: none;
+    animation: floatup 2.2s ease-out forwards;
+  }
+  @keyframes floatup { from { opacity: 1; transform: translateY(0) scale(.6); } to { opacity: 0; transform: translateY(-160px) scale(1.3) rotate(20deg); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    .greeting span { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="scene" id="scene">
+  <div class="moon"></div>
+  <div class="hill"></div>
+
+  <div class="lantern" style="left:5vw;animation-delay:-.4s"><div class="string" style="height:30px"></div><div class="body">福</div><div class="tassel"></div></div>
+  <div class="lantern" style="left:calc(5vw + 64px);animation-delay:-1.3s"><div class="string" style="height:70px"></div><div class="body">圓</div><div class="tassel"></div></div>
+
+  <div class="greeting">
+    <h1 id="line1">中秋佳節快樂</h1>
+    <p id="line2">闔家平安</p>
+  </div>
+
+  <div class="rabbit-wrap">
+    <svg class="rabbit" viewBox="0 0 260 280" aria-label="可愛的小白兔">
+      <!-- 耳朵 -->
+      <g class="ear-l">
+        <ellipse cx="100" cy="50" rx="20" ry="52" fill="var(--rabbit)" stroke="var(--rabbit-shade)" stroke-width="3"/>
+        <ellipse cx="100" cy="54" rx="10" ry="38" fill="var(--ear-inner)"/>
+      </g>
+      <g class="ear-r">
+        <ellipse cx="160" cy="50" rx="20" ry="52" fill="var(--rabbit)" stroke="var(--rabbit-shade)" stroke-width="3"/>
+        <ellipse cx="160" cy="54" rx="10" ry="38" fill="var(--ear-inner)"/>
+      </g>
+      <!-- 身體 -->
+      <ellipse cx="130" cy="220" rx="72" ry="56" fill="var(--rabbit)" stroke="var(--rabbit-shade)" stroke-width="3"/>
+      <!-- 月餅 -->
+      <g transform="translate(130 222)">
+        <circle r="30" fill="#d9913a" stroke="#b56e22" stroke-width="3"/>
+        <circle r="21" fill="none" stroke="#b56e22" stroke-width="2" stroke-dasharray="4 4"/>
+        <text y="8" text-anchor="middle" font-size="22" font-weight="700" fill="#8a4d12">安</text>
+      </g>
+      <!-- 抱月餅的手 -->
+      <ellipse cx="96" cy="222" rx="16" ry="12" fill="var(--rabbit)" stroke="var(--rabbit-shade)" stroke-width="3"/>
+      <g class="paw-wave">
+        <ellipse cx="194" cy="176" rx="14" ry="18" fill="var(--rabbit)" stroke="var(--rabbit-shade)" stroke-width="3"/>
+      </g>
+      <!-- 頭 -->
+      <ellipse cx="130" cy="130" rx="70" ry="60" fill="var(--rabbit)" stroke="var(--rabbit-shade)" stroke-width="3"/>
+      <!-- 眼睛 -->
+      <g class="eye"><ellipse cx="104" cy="126" rx="8" ry="10" fill="var(--ink)"/><circle cx="107" cy="122" r="3" fill="#fff"/></g>
+      <g class="eye"><ellipse cx="156" cy="126" rx="8" ry="10" fill="var(--ink)"/><circle cx="159" cy="122" r="3" fill="#fff"/></g>
+      <!-- 腮紅 -->
+      <ellipse cx="86" cy="148" rx="13" ry="8" fill="var(--cheek)" opacity=".7"/>
+      <ellipse cx="174" cy="148" rx="13" ry="8" fill="var(--cheek)" opacity=".7"/>
+      <!-- 鼻子嘴巴 -->
+      <ellipse cx="130" cy="142" rx="5" ry="4" fill="var(--ear-inner)"/>
+      <path d="M130 146 q-8 10 -14 4 M130 146 q8 10 14 4" stroke="var(--ink)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- 腳 -->
+      <ellipse cx="96" cy="272" rx="22" ry="9" fill="var(--rabbit)" stroke="var(--rabbit-shade)" stroke-width="3"/>
+      <ellipse cx="164" cy="272" rx="22" ry="9" fill="var(--rabbit)" stroke="var(--rabbit-shade)" stroke-width="3"/>
+    </svg>
+  </div>
+
+  <div class="hint">輕點畫面，送你月餅 🥮</div>
+</div>
+
+<script>
+  const scene = document.getElementById('scene');
+
+  // 星星
+  for (let i = 0; i < 70; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random() * 100 + 'vw';
+    s.style.top = Math.random() * 60 + 'vh';
+    s.style.animationDelay = (Math.random() * 3) + 's';
+    const size = Math.random() * 2 + 1.5;
+    s.style.width = s.style.height = size + 'px';
+    scene.prepend(s);
+  }
+
+  // 逐字跳出祝福
+  function splitText(el, startDelay) {
+    const chars = [...el.textContent];
+    el.textContent = '';
+    chars.forEach((c, i) => {
+      const span = document.createElement('span');
+      span.textContent = c;
+      span.style.animationDelay = (startDelay + i * 0.18) + 's';
+      el.appendChild(span);
+    });
+    return startDelay + chars.length * 0.18;
+  }
+  const next = splitText(document.getElementById('line1'), 2.2);
+  splitText(document.getElementById('line2'), next + 0.3);
+
+  // 點擊飄出小驚喜
+  const treats = ['🥮', '🌕', '💛', '🏮', '✨', '🐰'];
+  scene.addEventListener('click', e => {
+    for (let i = 0; i < 5; i++) {
+      const f = document.createElement('div');
+      f.className = 'float';
+      f.textContent = treats[Math.floor(Math.random() * treats.length)];
+      f.style.left = (e.clientX - 14 + (Math.random() - .5) * 80) + 'px';
+      f.style.top = (e.clientY - 14 + (Math.random() - .5) * 40) + 'px';
+      f.style.animationDelay = (i * 0.08) + 's';
+      scene.appendChild(f);
+      setTimeout(() => f.remove(), 2600);
+    }
+  });
+</script>
+</body>
+</html>
