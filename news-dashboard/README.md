@@ -12,4 +12,4 @@ Dashboard: https://claude.ai/artifact/K2K3VGmSuknBGFqps6N8Nw
 
 `.github/workflows/news-site.yml` 每 15 分鐘：從線上網站讀回上一版 `news.json` → 執行 `scrape_news.py` 合併（保留 24 小時）→ `build_site.py` 用 `site/shell.html` 包住 `index.html` → 部署到 GitHub Pages。
 
-需要在 repo 的 Settings → Pages → Build and deployment → Source 選 **GitHub Actions**，且 workflow 要在 `main` 分支上才會依排程執行。
+Pages 來源已設為 **GitHub Actions**（Settings → Pages → Build and deployment → Source）。若改回「Deploy from a branch」，舊的部署會把網站蓋回只有 README 的頁面。workflow 要在 `main` 分支上才會依排程執行。
