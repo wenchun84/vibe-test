@@ -1,0 +1,277 @@
+<style>
+  .nw { font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+  .nw-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--cds-gap-sm); margin-bottom: var(--cds-gap-md); }
+  .nw-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; }
+  .nw-sub { color: var(--color-fg-muted); font-size: var(--cds-font-size-body); margin: var(--cds-gap-xs) 0 0; }
+  .nw-sub b { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .nw-tabs { display: flex; gap: var(--cds-gap-xs); border-bottom: 1px solid var(--color-border-line); margin-bottom: var(--cds-gap-md); }
+  .nw-tab { appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; padding: var(--cds-pad-sm) var(--cds-pad-md); font: inherit; font-size: var(--cds-font-size-body); color: var(--color-fg-muted); cursor: pointer; margin-bottom: -1px; }
+  .nw-tab[aria-selected="true"] { color: var(--color-fg); border-bottom-color: var(--color-fg); font-weight: 500; }
+  .nw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--cds-gap-md); }
+  .nw-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-height: 18rem; display: flex; flex-direction: column; }
+  .nw-card-h { display: flex; justify-content: space-between; align-items: baseline; gap: var(--cds-gap-sm); margin-bottom: var(--cds-gap-sm); }
+  .nw-card-h h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .nw-card-h a { color: inherit; text-decoration: none; }
+  .nw-card-h a:hover { text-decoration: underline; }
+  .nw-meta { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .nw-list { list-style: none; margin: 0; padding: 0; flex: 1; }
+  .nw-list li { display: grid; grid-template-columns: 3.2rem 1fr; gap: var(--cds-gap-sm); padding: var(--cds-pad-xs) 0; border-top: 1px solid var(--color-border-line); font-size: var(--cds-font-size-body); line-height: 1.45; }
+  .nw-list li:first-child { border-top: 0; }
+  .nw-time { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; padding-top: 0.15em; }
+  .nw a.nw-link { color: var(--color-fg); text-decoration: none; }
+  .nw a.nw-link:hover { text-decoration: underline; }
+  .nw-fresh { color: var(--color-ok); }
+  .nw-tag { display: inline-block; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-right: var(--cds-gap-xs); }
+  .nw-bar { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; margin-bottom: var(--cds-gap-md); }
+  .nw-chip { appearance: none; font: inherit; font-size: var(--cds-font-size-caption); border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); border-radius: 999px; padding: var(--cds-pad-xs) var(--cds-pad-sm); cursor: pointer; }
+  .nw-chip[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); border-color: var(--color-fg); }
+  .nw-search { flex: 1 1 12rem; min-width: 0; font: inherit; font-size: var(--cds-font-size-body); padding: var(--cds-pad-xs) var(--cds-pad-sm); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-bg); color: var(--color-fg); }
+  .nw-tablebox { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); max-height: 70vh; overflow: auto; min-height: 18rem; }
+  .nw-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); }
+  .nw-table th { position: sticky; top: 0; background: var(--color-panel); text-align: left; font-weight: 500; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: var(--cds-pad-sm) var(--cds-pad-md); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .nw-table td { padding: var(--cds-pad-xs) var(--cds-pad-md); border-top: 1px solid var(--color-border-line); vertical-align: top; line-height: 1.45; }
+  .nw-table td.nw-c-time { white-space: nowrap; color: var(--color-fg-muted); font-variant-numeric: tabular-nums; font-size: var(--cds-font-size-caption); }
+  .nw-table td.nw-c-src, .nw-table td.nw-c-cat { white-space: nowrap; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .nw-empty { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); padding: var(--cds-pad-md); }
+  .nw-fail { display: flex; align-items: center; justify-content: center; gap: var(--cds-gap-xs); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); flex: 1; min-height: 8rem; }
+  .nw-fail::before { content: ""; width: 0.375rem; height: 0.375rem; border-radius: 50%; background: var(--color-bad); }
+  .nw-foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-md); }
+  [data-dash-source-state=empty] { color: transparent; }
+  [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+  @media (max-width: 40rem) { .nw-table .nw-c-cat { display: none; } }
+</style>
+
+<div class="nw">
+  <header class="nw-head" id="top">
+    <div>
+      <h1 class="nw-title">台灣即時新聞</h1>
+      <p class="nw-sub">
+        7 個來源共 <b data-source="summary" data-field="total" class="dash-skeleton">—</b> 則，資料抓取於
+        <b data-source="summary" data-field="fetched" class="nw-fetched dash-skeleton">—</b>
+        <span class="nw-ago"></span>
+      </p>
+    </div>
+  </header>
+
+  <div class="nw-tabs" role="tablist">
+    <button class="nw-tab" role="tab" id="tab-sources" data-tab="sources" aria-selected="true">各家即時</button>
+    <button class="nw-tab" role="tab" id="tab-all" data-tab="all" aria-selected="false">全部新聞（依時間）</button>
+  </div>
+
+  <section id="sources" class="nw-panel">
+    <div class="nw-grid nw-cards"></div>
+  </section>
+
+  <section id="all" class="nw-panel" hidden>
+    <div class="nw-bar">
+      <div class="nw-chips" style="display:flex;flex-wrap:wrap;gap:var(--cds-gap-xs)"></div>
+      <input class="nw-search" type="search" placeholder="搜尋標題、分類…" aria-label="搜尋新聞">
+    </div>
+    <div class="nw-tablebox">
+      <table class="nw-table" id="all-table" data-source="news" data-row-key="url">
+        <thead><tr>
+          <th data-field="published">時間</th>
+          <th data-field="source">媒體</th>
+          <th data-field="category" class="nw-c-cat">分類</th>
+          <th data-field="title">標題</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="nw-foot">點標題開啟原文。標題與連結版權屬各媒體所有；本頁只整理標題與連結。</p>
+</div>
+
+<script>
+  const SOURCES = [
+    { name: 'ETtoday', home: 'https://www.ettoday.net/' },
+    { name: '聯合新聞', home: 'https://udn.com/news/index' },
+    { name: '聯合新聞網即時', home: 'https://udn.com/news/breaknews/1/99#breaknews' },
+    { name: 'LINE TODAY', home: 'https://today.line.me/tw/v3/tab' },
+    { name: '三立新聞網', home: 'https://www.setn.com/' },
+    { name: 'TVBS 新聞', home: 'https://news.tvbs.com.tw/' },
+    { name: '中時新聞網', home: 'https://www.chinatimes.com/realtimenews/?chdtv' },
+  ];
+  window.NW_SOURCES = SOURCES;
+
+  dash.calc('summary', {
+    title: '新聞總數與抓取時間',
+    description: '所有來源的標題數，以及這份資料抓取的時間。',
+    inputs: ['news'],
+    fn: (news) => ({ total: news.length, fetched: news.reduce((m, r) => (r.fetched > m ? r.fetched : m), '') }),
+  });
+
+  dash.calc('by_source', {
+    title: '各媒體則數與最新時間',
+    description: '每個媒體抓到幾則標題，以及其中最新一則的發布時間。',
+    inputs: ['news'],
+    fn: (news) => {
+      const g = {};
+      news.forEach((r) => {
+        const x = (g[r.source] = g[r.source] || { source: r.source, n: 0, latest: '' });
+        x.n += 1;
+        if (r.published && r.published > x.latest) x.latest = r.published;
+      });
+      return Object.values(g);
+    },
+  });
+</script>
+
+<script>
+  const fmtHM = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    const p = (n) => String(n).padStart(2, '0');
+    const tw = new Date(d.getTime() + (8 * 60 + d.getTimezoneOffset()) * 60000);
+    return p(tw.getHours()) + ':' + p(tw.getMinutes());
+  };
+  const fmtFull = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    const tw = new Date(d.getTime() + (8 * 60 + d.getTimezoneOffset()) * 60000);
+    const p = (n) => String(n).padStart(2, '0');
+    return `${tw.getMonth() + 1}/${tw.getDate()} ${p(tw.getHours())}:${p(tw.getMinutes())}`;
+  };
+  const ago = (iso) => {
+    if (!iso) return '';
+    const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 1) return '剛剛';
+    if (m < 60) return m + ' 分鐘前';
+    if (m < 60 * 24) return Math.floor(m / 60) + ' 小時前';
+    return Math.floor(m / 1440) + ' 天前';
+  };
+  const safeHref = (u) => (/^https:\/\//.test(u || '') ? u : null);
+  const link = (r) => {
+    const href = safeHref(r.url);
+    const el = document.createElement(href ? 'a' : 'span');
+    el.className = 'nw-link';
+    el.textContent = r.title;
+    if (href) { el.href = href; el.target = '_blank'; el.rel = 'noopener noreferrer'; }
+    return el;
+  };
+  const byTime = (a, b) => (b.published || '').localeCompare(a.published || '');
+
+  // Tabs
+  const tabs = [...document.querySelectorAll('.nw-tab')];
+  const showTab = (id) => {
+    tabs.forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === id)));
+    document.querySelectorAll('.nw-panel').forEach((p) => (p.hidden = p.id !== id));
+    dash.setLink(id);
+  };
+  tabs.forEach((t) => t.addEventListener('click', () => showTab(t.dataset.tab)));
+
+  // Filters on the "all" tab
+  let pick = '';
+  let q = '';
+  const chips = document.querySelector('.nw-chips');
+  const search = document.querySelector('.nw-search');
+  search.addEventListener('input', () => { q = search.value.trim().toLowerCase(); drawTable(); });
+  const drawChips = () => {
+    chips.replaceChildren(...[''].concat(window.NW_SOURCES.map((s) => s.name)).map((name) => {
+      const b = document.createElement('button');
+      b.className = 'nw-chip';
+      b.textContent = name || '全部';
+      b.setAttribute('aria-pressed', String(pick === name));
+      b.addEventListener('click', () => { pick = name; drawChips(); drawTable(); });
+      return b;
+    }));
+  };
+  drawChips();
+
+  const cards = document.querySelector('.nw-cards');
+  const tbody = document.querySelector('#all-table tbody');
+
+  function drawCards(rows, ok, failed) {
+    cards.replaceChildren(...window.NW_SOURCES.map((s, i) => {
+      const card = document.createElement('article');
+      card.className = 'nw-card';
+      card.id = 'src-' + i;
+      const h = document.createElement('div');
+      h.className = 'nw-card-h';
+      const h2 = document.createElement('h2');
+      const a = document.createElement('a');
+      a.href = s.home; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = s.name;
+      h2.append(a);
+      const meta = document.createElement('span');
+      meta.className = 'nw-meta';
+      const n = document.createElement('span');
+      n.dataset.source = 'by_source'; n.dataset.field = 'n'; n.dataset.where = 'source=' + encodeURIComponent(s.name);
+      const mine = rows.filter((r) => r.source === s.name);
+      const stat = (dash.data('by_source').data || []).find((x) => x.source === s.name);
+      n.textContent = ok && stat ? String(stat.n) : '—';
+      meta.append(n, document.createTextNode(' 則'));
+      if (ok && stat && stat.latest) meta.append(document.createTextNode(' · 最新 ' + ago(stat.latest)));
+      h.append(h2, meta);
+      card.append(h);
+      if (failed) {
+        const f = document.createElement('div'); f.className = 'nw-fail'; f.textContent = 'Failed to load'; card.append(f);
+        return card;
+      }
+      const ul = document.createElement('ul');
+      ul.className = 'nw-list' + (ok ? '' : ' dash-skeleton');
+      ul.dataset.source = 'news';
+      const show = s.name === 'LINE TODAY' || s.name === '聯合新聞' ? mine : mine.slice().sort(byTime);
+      show.slice(0, 10).forEach((r) => {
+        const li = document.createElement('li');
+        const t = document.createElement('span');
+        t.className = 'nw-time';
+        t.textContent = r.published ? fmtHM(r.published) : '';
+        if (r.published && Date.now() - new Date(r.published).getTime() < 30 * 60000) t.classList.add('nw-fresh');
+        const body = document.createElement('span');
+        if (r.category) { const c = document.createElement('span'); c.className = 'nw-tag'; c.textContent = r.category; body.append(c); }
+        body.append(link(r));
+        li.append(t, body);
+        ul.append(li);
+      });
+      if (ok && !mine.length) { const e = document.createElement('div'); e.className = 'nw-empty'; e.textContent = '這次沒有抓到這家的新聞。'; card.append(e); }
+      card.append(ul);
+      return card;
+    }));
+  }
+
+  let allRows = [];
+  function drawTable() {
+    const rows = allRows
+      .filter((r) => !pick || r.source === pick)
+      .filter((r) => !q || (r.title + ' ' + r.category + ' ' + r.source).toLowerCase().includes(q))
+      .sort(byTime);
+    tbody.replaceChildren(...rows.map((r) => {
+      const tr = document.createElement('tr');
+      tr.dataset.key = r.url;
+      const td = (cls, v) => { const c = document.createElement('td'); c.className = cls; if (v instanceof Node) c.append(v); else c.textContent = v; return c; };
+      tr.append(
+        td('nw-c-time', r.published ? fmtFull(r.published) : '—'),
+        td('nw-c-src', r.source),
+        td('nw-c-cat', r.category || ''),
+        td('nw-c-title', link(r)),
+      );
+      return tr;
+    }));
+    if (!rows.length && allRows.length) {
+      const tr = document.createElement('tr'); const c = document.createElement('td'); c.colSpan = 4; c.className = 'nw-empty'; c.textContent = '沒有符合的新聞。'; tr.append(c); tbody.append(tr);
+    }
+  }
+
+  let shownOnce = false;
+  dash.onData(() => {
+    const d = dash.data('news');
+    const ok = d.status === 'ok';
+    const failed = d.status === 'error';
+    allRows = ok ? d.data : [];
+    const sm = dash.data('summary');
+    const s = sm.status === 'ok' ? sm.data : null;
+    document.querySelectorAll('[data-source="summary"]').forEach((el) => {
+      el.classList.toggle('dash-skeleton', !s && !failed);
+      el.textContent = s ? (el.dataset.field === 'total' ? d3.format(',')(s.total) : fmtFull(s.fetched)) : '—';
+    });
+    document.querySelector('.nw-ago').textContent = s && s.fetched ? '（' + ago(s.fetched) + '）' : '';
+    drawCards(allRows, ok, failed);
+    drawTable();
+    if (!shownOnce && ok) {
+      shownOnce = true;
+      const id = location.hash.slice(1);
+      if (id === 'all' || id === 'sources') showTab(id);
+    }
+  });
+</script>
