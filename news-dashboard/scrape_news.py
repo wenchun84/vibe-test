@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""Fetch latest headlines from 7 Taiwanese news sources -> news.json (rows)."""
+"""Fetch latest headlines from 7 Taiwanese news sources -> news.json (rows).
+
+Usage: scrape_news.py OUT.json [PREVIOUS.json]
+With PREVIOUS, rows from earlier runs are merged in (deduped by url) and the
+last KEEP_HOURS hours are kept, so the file builds up an hourly history.
+"""
 import html, json, re, sys, urllib.request, email.utils
 from datetime import datetime, timedelta, timezone
 
 TW = timezone(timedelta(hours=8))
 NOW = datetime.now(TW)
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
-LIMIT = 25
+LIMIT = 50
+KEEP_HOURS = 24
 
 
 def get(url):
@@ -53,7 +59,7 @@ def ettoday():
 
 def udn_break():
     out = []
-    for page in (1, 2):
+    for page in (1, 2, 3):
         d = json.loads(get(f"https://udn.com/api/more?page={page}&id=&channelId=1&cate_id=99&type=breaknews"))
         for it in d.get("lists", []):
             dt = datetime.strptime(it["time"]["date"], "%Y-%m-%d %H:%M").replace(tzinfo=TW)
@@ -139,6 +145,10 @@ def rel_time(txt):
         return NOW - {"分鐘": timedelta(minutes=n), "小時": timedelta(hours=n), "天": timedelta(days=n)}[m.group(2)]
     if "剛剛" in txt:
         return NOW
+    m = re.match(r"(\d{1,2}):(\d{2})$", txt)
+    if m:
+        dt = NOW.replace(hour=int(m.group(1)), minute=int(m.group(2)), second=0, microsecond=0)
+        return dt - timedelta(days=1) if dt > NOW + timedelta(minutes=5) else dt
     m = re.match(r"(\d{4})/(\d{1,2})/(\d{1,2})\s+(\d{1,2}):(\d{2})", txt)
     if m:
         return datetime(*map(int, m.groups()), tzinfo=TW)
@@ -168,7 +178,7 @@ def tvbs():
 
 
 def chinatimes():
-    s = get("https://www.chinatimes.com/realtimenews/?chdtv")
+    s = "".join(get(f"https://www.chinatimes.com/realtimenews/?page={n}&chdtv") for n in (1, 2, 3))
     out = []
     for blk in re.findall(r'<h3 class="title">(.*?)<p class="intro">', s, re.S):
         a = re.search(r'<a href="([^"]+)">(.*?)</a>', blk, re.S)
@@ -195,7 +205,23 @@ if __name__ == "__main__":
     fetched = iso(datetime.now(TW))
     for r in rows:
         r["fetched"] = fetched
+        r["first_seen"] = fetched
     out = sys.argv[1] if len(sys.argv) > 1 else "news.json"
+    if len(sys.argv) > 2:
+        try:
+            prev = json.load(open(sys.argv[2], encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            prev = []
+            status.append(f"previous file unreadable, starting fresh: {e}")
+        cutoff = iso(NOW - timedelta(hours=KEEP_HOURS))
+        current = {r["url"] for r in rows}
+        old = {r["url"]: r for r in prev if r.get("url")}
+        for r in rows:
+            if r["url"] in old and old[r["url"]].get("first_seen"):
+                r["first_seen"] = old[r["url"]]["first_seen"]
+        kept = [r for u, r in old.items() if u not in current and r.get("published") and r["published"] >= cutoff]
+        status.append(f"merged {len(kept)} earlier rows")
+        rows += kept
     json.dump(rows, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=0)
     print("\n".join(status), file=sys.stderr)
     print(f"{len(rows)} rows -> {out}", file=sys.stderr)

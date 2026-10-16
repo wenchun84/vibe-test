@@ -38,6 +38,23 @@
   .nw-foot { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); margin-top: var(--cds-gap-md); }
   [data-dash-source-state=empty] { color: transparent; }
   [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+  .nw-chart { position: relative; min-height: 260px; }
+  .nw-chart svg { display: block; overflow: visible; }
+  .nw-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm) var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin: var(--cds-gap-sm) 0 0; }
+  .nw-legend span::before { content: ""; display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 2px; margin-right: 0.35rem; background: var(--sw); vertical-align: -0.05rem; }
+  .nw-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; z-index: 2; }
+  .nw-tip .h { color: var(--cds-text-secondary); margin-bottom: 2px; }
+  .nw-tip i { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 2px; margin-right: 0.35rem; }
+  .nw-tip b { font-weight: 500; font-variant-numeric: tabular-nums; margin-left: 0.5rem; float: right; }
+  .nw-hours { display: flex; flex-direction: column; gap: var(--cds-gap-sm); margin-top: var(--cds-gap-md); }
+  .nw-hour { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); }
+  .nw-hour summary { cursor: pointer; padding: var(--cds-pad-sm) var(--cds-pad-lg); display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--cds-gap-xs) var(--cds-gap-md); list-style-position: inside; }
+  .nw-hour summary .t { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-heading); font-variant-numeric: tabular-nums; }
+  .nw-hour summary .n { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .nw-hour summary .bd { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .nw-hour-body { padding: 0 var(--cds-pad-lg) var(--cds-pad-md); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-sm) var(--cds-gap-lg); }
+  .nw-hour-body h3 { font-size: var(--cds-font-size-caption); font-weight: 500; color: var(--color-fg-muted); margin: var(--cds-gap-sm) 0 0; }
+  @media (prefers-reduced-motion: no-preference) { .nw-bar-in { animation: nwgrow var(--cds-dur-slow) var(--cds-ease-out); transform-origin: bottom; transform-box: fill-box; } @keyframes nwgrow { from { transform: scaleY(0); } } }
   @media (max-width: 40rem) { .nw-table .nw-c-cat { display: none; } }
 </style>
 
@@ -54,11 +71,24 @@
   </header>
 
   <div class="nw-tabs" role="tablist">
-    <button class="nw-tab" role="tab" id="tab-sources" data-tab="sources" aria-selected="true">各家即時</button>
+    <button class="nw-tab" role="tab" id="tab-hourly" data-tab="hourly" aria-selected="true">每小時總覽</button>
+    <button class="nw-tab" role="tab" id="tab-sources" data-tab="sources" aria-selected="false">各家即時</button>
     <button class="nw-tab" role="tab" id="tab-all" data-tab="all" aria-selected="false">全部新聞（依時間）</button>
   </div>
 
-  <section id="sources" class="nw-panel">
+  <section id="hourly" class="nw-panel">
+    <div class="nw-card" id="hourly-chart-card" style="min-height:0">
+      <div class="nw-card-h">
+        <h2>過去 24 小時每小時發稿量</h2>
+        <span class="nw-meta">依發布時間（台灣時間）分組，各媒體堆疊</span>
+      </div>
+      <div class="nw-chart dash-skeleton" id="hourly-chart" data-source="hourly"></div>
+      <div class="nw-legend" id="hourly-legend" data-source="hourly"></div>
+    </div>
+    <div class="nw-hours" id="hour-list" data-source="news"></div>
+  </section>
+
+  <section id="sources" class="nw-panel" hidden>
     <div class="nw-grid nw-cards"></div>
   </section>
 
@@ -100,6 +130,22 @@
     description: '所有來源的標題數，以及這份資料抓取的時間。',
     inputs: ['news'],
     fn: (news) => ({ total: news.length, fetched: news.reduce((m, r) => (r.fetched > m ? r.fetched : m), '') }),
+  });
+
+  dash.calc('hourly', {
+    title: '每小時各媒體則數',
+    description: '依發布時間（台灣時間）整點分組，計算各媒體每小時的標題數；沒有發布時間的不計。',
+    inputs: ['news'],
+    fn: (news) => {
+      const g = {};
+      news.forEach((r) => {
+        if (!r.published) return;
+        const hour = r.published.slice(0, 13) + ':00';
+        const k = hour + '|' + r.source;
+        (g[k] = g[k] || { hour, source: r.source, n: 0 }).n += 1;
+      });
+      return Object.values(g);
+    },
   });
 
   dash.calc('by_source', {
@@ -253,6 +299,122 @@
     }
   }
 
+  // Hourly overview
+  const hourKey = (iso) => iso.slice(0, 13) + ':00';
+  const hourLabel = (h) => h.slice(11, 13) + ':00';
+  const dayLabel = (h) => `${+h.slice(5, 7)}/${+h.slice(8, 10)}`;
+  const addHours = (h, k) => {
+    const d = new Date(h + ':00+08:00');
+    d.setTime(d.getTime() + k * 3600000);
+    const tw = new Date(d.getTime() + 8 * 3600000);
+    return tw.toISOString().slice(0, 13) + ':00';
+  };
+  const chartBox = document.getElementById('hourly-chart');
+  const legend = document.getElementById('hourly-legend');
+  const hourList = document.getElementById('hour-list');
+  const openHours = new Set();
+  let openInit = false;
+
+  function drawHourly(ok, failed) {
+    const names = window.NW_SOURCES.map((s) => s.name);
+    const color = (n) => dash.colors[names.indexOf(n) % dash.colors.length];
+    legend.replaceChildren(...names.map((n) => { const s = document.createElement('span'); s.style.setProperty('--sw', color(n)); s.textContent = n; return s; }));
+    chartBox.replaceChildren();
+    chartBox.classList.toggle('dash-skeleton', !ok && !failed);
+    if (failed) { const f = document.createElement('div'); f.className = 'nw-fail'; f.style.minHeight = '260px'; f.textContent = 'Failed to load'; chartBox.append(f); }
+    const hd = dash.data('hourly');
+    const sm = dash.data('summary');
+    if (!ok || hd.status !== 'ok' || sm.status !== 'ok' || !sm.data.fetched) { hourList.replaceChildren(); return; }
+    const end = hourKey(sm.data.fetched);
+    const hours = d3.range(23, -1, -1).map((k) => addHours(end, -k));
+    const cell = {};
+    hd.data.forEach((r) => { (cell[r.hour] = cell[r.hour] || {})[r.source] = r.n; });
+    const table = hours.map((h) => Object.assign({ hour: h }, Object.fromEntries(names.map((n) => [n, (cell[h] || {})[n] || 0]))));
+    const series = d3.stack().keys(names)(table);
+    const W = Math.max(280, chartBox.clientWidth), H = 260;
+    const yMax = d3.max(table, (r) => d3.sum(names, (n) => r[n])) || 1;
+    const y = d3.scaleLinear([0, yMax], [H - 24, 8]).nice();
+    const svg = d3.select(chartBox).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const yTicks = y.ticks(4);
+    const tmp = svg.append('text').attr('font-size', 'var(--cds-font-size-caption)').text(d3.format(',')(d3.max(yTicks)));
+    const ml = Math.ceil(tmp.node().getComputedTextLength()) + 8; tmp.remove();
+    const x = d3.scaleBand(hours, [ml, W - 4]).paddingInner(0.25).paddingOuter(0.1);
+    svg.append('g').selectAll('line').data(yTicks).join('line').attr('x1', ml).attr('x2', W - 4).attr('y1', (d) => y(d)).attr('y2', (d) => y(d)).attr('stroke', 'var(--cds-chart-grid)');
+    svg.append('g').selectAll('text').data(yTicks).join('text').attr('x', ml - 6).attr('y', (d) => y(d)).attr('dy', '0.32em').attr('text-anchor', 'end').attr('fill', 'var(--color-fg-muted)').attr('font-size', 'var(--cds-font-size-caption)').text(d3.format(','));
+    const every = Math.ceil(24 / Math.max(1, Math.floor((W - ml) / 44)));
+    svg.append('g').selectAll('text').data(hours.filter((h, i) => (hours.length - 1 - i) % every === 0)).join('text')
+      .attr('x', (h) => x(h) + x.bandwidth() / 2).attr('y', H - 6).attr('text-anchor', 'middle').attr('fill', 'var(--color-fg-muted)').attr('font-size', 'var(--cds-font-size-caption)')
+      .text((h) => (h.slice(11, 13) === '00' ? dayLabel(h) : hourLabel(h)));
+    svg.append('line').attr('x1', ml).attr('x2', W - 4).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
+    svg.append('g').selectAll('g').data(series).join('g').attr('fill', (s) => color(s.key))
+      .selectAll('rect').data((s) => s.map((d) => Object.assign(d, { key: s.key }))).join('rect')
+      .attr('class', 'nw-bar-in')
+      .attr('x', (d) => x(d.data.hour)).attr('width', x.bandwidth())
+      .attr('y', (d) => y(d[1])).attr('height', (d) => Math.max(0, y(d[0]) - y(d[1])));
+    const tip = document.createElement('div'); tip.className = 'nw-tip'; tip.hidden = true; chartBox.append(tip);
+    const hl = svg.append('rect').attr('fill', 'none').attr('stroke', 'var(--color-fg)').attr('stroke-width', 1).attr('rx', 2).attr('visibility', 'hidden');
+    svg.append('g').selectAll('rect').data(table).join('rect')
+      .attr('x', (r) => x(r.hour) - (x.step() - x.bandwidth()) / 2).attr('width', x.step()).attr('y', 0).attr('height', H - 24).attr('fill', 'transparent')
+      .style('cursor', 'pointer')
+      .on('mousemove', (ev, r) => {
+        const total = d3.sum(names, (n) => r[n]);
+        hl.attr('visibility', 'visible').attr('x', x(r.hour) - 1).attr('width', x.bandwidth() + 2).attr('y', y(total) - 1).attr('height', Math.max(0, y(0) - y(total)) + 1);
+        tip.replaceChildren();
+        const h = document.createElement('div'); h.className = 'h'; h.textContent = `${dayLabel(r.hour)} ${hourLabel(r.hour)}–${hourLabel(addHours(r.hour, 1))} · 共 ${total} 則`; tip.append(h);
+        names.filter((n) => r[n]).forEach((n) => { const l = document.createElement('div'); const i = document.createElement('i'); i.style.background = color(n); const b = document.createElement('b'); b.textContent = r[n]; l.append(i, document.createTextNode(n), b); tip.append(l); });
+        tip.hidden = false;
+        const [mx] = d3.pointer(ev, chartBox);
+        const tw = tip.offsetWidth;
+        tip.style.left = Math.min(Math.max(0, mx + 12), chartBox.clientWidth - tw) + 'px';
+        tip.style.top = '8px';
+      })
+      .on('mouseleave', () => { tip.hidden = true; hl.attr('visibility', 'hidden'); })
+      .on('click', (ev, r) => { openHours.add(r.hour); drawHourList(); const el = document.getElementById('h-' + r.hour.slice(0, 13)); if (el) el.scrollIntoView({ block: 'start' }); });
+    drawHourList(hours);
+  }
+
+  let lastHours = [];
+  function drawHourList(hours) {
+    if (hours) lastHours = hours;
+    const names = window.NW_SOURCES.map((s) => s.name);
+    const groups = d3.group(allRows.filter((r) => r.published), (r) => hourKey(r.published));
+    const list = lastHours.slice().reverse().filter((h) => groups.has(h));
+    if (!openInit && list.length) { openInit = true; list.slice(0, 2).forEach((h) => openHours.add(h)); }
+    hourList.replaceChildren(...list.map((h) => {
+      const rows = groups.get(h).slice().sort(byTime);
+      const det = document.createElement('details');
+      det.className = 'nw-hour'; det.id = 'h-' + h.slice(0, 13);
+      det.open = openHours.has(h);
+      det.addEventListener('toggle', () => { if (det.open) openHours.add(h); else openHours.delete(h); });
+      const sum = document.createElement('summary');
+      const t = document.createElement('span'); t.className = 't'; t.textContent = `${dayLabel(h)} ${hourLabel(h)}`;
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = rows.length + ' 則';
+      const bd = document.createElement('span'); bd.className = 'bd';
+      bd.textContent = names.map((nm) => [nm, rows.filter((r) => r.source === nm).length]).filter((x) => x[1]).map((x) => `${x[0]} ${x[1]}`).join(' · ');
+      sum.append(t, n, bd);
+      det.append(sum);
+      const body = document.createElement('div'); body.className = 'nw-hour-body';
+      names.forEach((nm) => {
+        const mine = rows.filter((r) => r.source === nm);
+        if (!mine.length) return;
+        const col = document.createElement('div');
+        const h3 = document.createElement('h3'); h3.textContent = `${nm}（${mine.length}）`;
+        const ul = document.createElement('ul'); ul.className = 'nw-list';
+        mine.forEach((r) => {
+          const li = document.createElement('li');
+          const tm = document.createElement('span'); tm.className = 'nw-time'; tm.textContent = fmtHM(r.published);
+          const b = document.createElement('span');
+          if (r.category) { const c = document.createElement('span'); c.className = 'nw-tag'; c.textContent = r.category; b.append(c); }
+          b.append(link(r));
+          li.append(tm, b); ul.append(li);
+        });
+        col.append(h3, ul); body.append(col);
+      });
+      det.append(body);
+      return det;
+    }));
+  }
+
   let shownOnce = false;
   dash.onData(() => {
     const d = dash.data('news');
@@ -266,12 +428,13 @@
       el.textContent = s ? (el.dataset.field === 'total' ? d3.format(',')(s.total) : fmtFull(s.fetched)) : '—';
     });
     document.querySelector('.nw-ago').textContent = s && s.fetched ? '（' + ago(s.fetched) + '）' : '';
+    drawHourly(ok, failed);
     drawCards(allRows, ok, failed);
     drawTable();
     if (!shownOnce && ok) {
       shownOnce = true;
       const id = location.hash.slice(1);
-      if (id === 'all' || id === 'sources') showTab(id);
+      if (id === 'all' || id === 'sources' || id === 'hourly') showTab(id);
     }
   });
 </script>
