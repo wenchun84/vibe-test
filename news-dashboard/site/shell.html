@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>台灣即時新聞</title>
+<meta name="description" content="ETtoday、聯合新聞、LINE TODAY、三立、TVBS、中時的即時新聞標題，每 15 分鐘更新，附每小時總覽。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232a78d6'/%3E%3Cpath d='M8 10h16M8 16h16M8 22h10' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --font-anthropic-sans: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    --font-anthropic-serif: "Noto Serif TC", "Songti TC", Georgia, serif;
+    --color-fg: #1f1e1c; --color-fg-muted: #6b6a66; --color-bg: #faf9f6; --color-panel: #ffffff;
+    --color-border-line: #e6e3dc; --color-ok: #2f7d4a; --color-warn: #a86a12; --color-bad: #c0392b;
+    --cds-font-size-caption: 12px; --cds-font-size-body: 14px; --cds-font-size-heading: 16px; --cds-font-size-title: 28px;
+    --cds-font-weight-medium: 500;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 16px; --cds-gap-lg: 24px; --cds-gap-xl: 32px;
+    --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 12px; --cds-pad-lg: 16px; --cds-pad-xl: 24px;
+    --cds-radius: 10px;
+    --cds-chart-grid: #ece9e2; --cds-chart-axis: #b9b5ab;
+    --cds-surface-popover: #ffffff; --cds-border: #dcd8cf; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.12);
+    --cds-text-secondary: #6b6a66; --cds-dur-slow: 400ms; --cds-ease-out: cubic-bezier(.2,.8,.2,1);
+    --skeleton: #ecebe6;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-fg: #ecebe7; --color-fg-muted: #a3a19b; --color-bg: #1b1b1a; --color-panel: #242422;
+      --color-border-line: #363532; --color-ok: #6cc28a; --color-warn: #e0a84a; --color-bad: #ef6b5b;
+      --cds-chart-grid: #2f2e2b; --cds-chart-axis: #5a5852;
+      --cds-surface-popover: #2b2b29; --cds-border: #44433f; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.5);
+      --cds-text-secondary: #a3a19b; --skeleton: #2f2e2b;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --color-fg: #ecebe7; --color-fg-muted: #a3a19b; --color-bg: #1b1b1a; --color-panel: #242422;
+    --color-border-line: #363532; --color-ok: #6cc28a; --color-warn: #e0a84a; --color-bad: #ef6b5b;
+    --cds-chart-grid: #2f2e2b; --cds-chart-axis: #5a5852;
+    --cds-surface-popover: #2b2b29; --cds-border: #44433f; --cds-shadow-popover: 0 4px 16px rgba(0,0,0,.5);
+    --cds-text-secondary: #a3a19b; --skeleton: #2f2e2b;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); -webkit-text-size-adjust: 100%; }
+  #dash-root { max-width: 1280px; margin-inline: auto; padding: 24px 16px 40px; }
+  @media (min-width: 900px) { #dash-root { padding: 32px 32px 48px; } }
+  .dash-skeleton { color: transparent !important; background: var(--skeleton); border-radius: 6px; min-width: 3em; display: inline-block; }
+  .nw-list.dash-skeleton, .nw-chart.dash-skeleton { display: block; min-height: 200px; }
+  .site-status { color: var(--color-fg-muted); font-size: 12px; margin-top: 8px; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+  // Minimal stand-in for the dashboard runtime: loads news.json, runs calcs, redraws.
+  (function () {
+    const state = { status: 'loading', data: [], message: '' };
+    const calcs = {};
+    const listeners = [];
+    const results = {};
+    const run = () => {
+      Object.keys(calcs).forEach((id) => {
+        if (state.status !== 'ok') { results[id] = { status: state.status, data: [] }; return; }
+        try {
+          const c = calcs[id];
+          results[id] = { status: 'ok', data: c.fn(...c.inputs.map((i) => (i === 'news' ? state.data : (results[i] || {}).data))) };
+        } catch (e) { results[id] = { status: 'error', data: [], message: String(e) }; }
+      });
+      listeners.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } });
+    };
+    window.dash = {
+      colors: ['#2a78d6', '#e0703a', '#3f9e5a', '#c94a8a', '#8a63d2', '#c9a227', '#2aa3a3', '#7a7a7a'],
+      data: (id) => (id === 'news' ? { status: state.status, data: state.data, message: state.message } : results[id] || { status: state.status, data: [] }),
+      onData: (fn) => { listeners.push(fn); try { fn(); } catch (e) { console.error(e); } },
+      calc: (id, c) => { calcs[id] = c; },
+      setLink: (name) => { history.replaceState(null, '', '#' + name); },
+      params: () => ({}), setParams: () => {}, resetParams: () => {}, refresh: () => load(),
+    };
+    async function load() {
+      try {
+        const r = await fetch('news.json?t=' + Date.now(), { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        state.data = await r.json();
+        state.status = 'ok';
+      } catch (e) {
+        if (state.status !== 'ok') { state.status = 'error'; state.message = String(e); }
+      }
+      run();
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+      load();
+      setInterval(load, 5 * 60 * 1000);
+      let w = window.innerWidth, t;
+      window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => { if (window.innerWidth !== w) { w = window.innerWidth; run(); } }, 150); });
+    });
+  })();
+</script>
+</head>
+<body>
+<div id="dash-root">
+<!--PAGE-->
+<p class="site-status">每 15 分鐘自動抓取一次；本頁每 5 分鐘自動重新載入資料。</p>
+</div>
+</body>
+</html>
